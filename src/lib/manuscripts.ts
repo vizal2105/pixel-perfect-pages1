@@ -6,6 +6,22 @@ export type Manuscript = {
   status: 'pending' | 'approved' | 'rejected'; reviewer_notes: string; created_at: string;
 };
 
+export function mimeForName(name: string, fallback = '') {
+  const ext = name.split('.').pop()?.toLowerCase();
+  if (ext === 'pdf') return 'application/pdf';
+  if (ext === 'docx') return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  if (ext === 'doc') return 'application/msword';
+  return fallback || 'application/octet-stream';
+}
+
+export function manuscriptKind(name: string): 'pdf' | 'docx' | 'doc' | 'other' {
+  const ext = name.split('.').pop()?.toLowerCase();
+  if (ext === 'pdf') return 'pdf';
+  if (ext === 'docx') return 'docx';
+  if (ext === 'doc') return 'doc';
+  return 'other';
+}
+
 // Data access goes through the browser client; row-level security limits students to their own rows and lets approved Faculty review all.
 const table = () => (supabase as any).from('manuscripts');
 
@@ -29,7 +45,7 @@ export async function submitManuscript(form: FormData) {
   if (file.size > 50 * 1024 * 1024) throw new Error('The file must be 50 MB or smaller.');
   const text = (k: string, max = 300) => String(form.get(k) ?? '').trim().slice(0, max);
   const path = `${user.id}/${crypto.randomUUID()}-${file.name.replace(/[^\w.-]+/g, '_')}`;
-  const up = await supabase.storage.from('manuscripts').upload(path, file);
+  const up = await supabase.storage.from('manuscripts').upload(path, file, { contentType: mimeForName(file.name, file.type), upsert: false });
   if (up.error) throw new Error('The file could not be uploaded.');
   const { error } = await table().insert({
     submitter_id: user.id, title: text('title'), kind: text('manuscriptType') === 'Research' ? 'Research' : 'Capstone',
@@ -52,10 +68,23 @@ export async function deleteManuscript(m: Manuscript) {
   await supabase.storage.from('manuscripts').remove([m.file_path]);
 }
 
-export async function fileUrl(m: Manuscript, download: boolean) {
-  const { data, error } = await supabase.storage.from('manuscripts').createSignedUrl(m.file_path, 300, download ? { download: m.file_name } : undefined);
+export async function fetchManuscriptFile(m: Manuscript) {
+  const { data, error } = await supabase.storage.from('manuscripts').download(m.file_path);
   if (error || !data) throw new Error('Unable to open the file.');
-  return data.signedUrl;
+  return data;
+}
+
+export async function downloadManuscript(m: Manuscript) {
+  const blob = await fetchManuscriptFile(m);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = m.file_name || 'manuscript';
+  link.rel = 'noopener';
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
 export const refLabel = (m: Manuscript) => `#sub-${1199 + m.ref_no}`;

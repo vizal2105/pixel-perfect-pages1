@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type FormEvent } from 'react';
-import { Archive, Download, Eye, Search } from 'lucide-react';
+import { Archive, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PortalLogo, PortalTheme, ThemeToggle, pageHead } from '@/components/portal';
 import { StatusBadge } from '@/components/manuscript-status';
+import { ManuscriptFileButtons } from '@/components/manuscript-file';
 import { supabase } from '@/integrations/supabase/client';
-import { fileUrl, formatDate, listApprovedManuscripts, refLabel, type Manuscript } from '@/lib/manuscripts';
+import { formatDate, listApprovedManuscripts, refLabel } from '@/lib/manuscripts';
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   head: () => pageHead('Search the Archive | DCRAP', 'Browse approved capstone projects and research papers.'),
@@ -48,11 +49,6 @@ function StudentDashboard() {
     await supabase.auth.signOut(); await navigate({ to: '/sign-in', replace: true });
   }
   const submit = (e: FormEvent) => { e.preventDefault(); setQuery(term); };
-  async function open(m: Manuscript, download: boolean) {
-    setError('');
-    const w = window.open('', '_blank');
-    try { const url = await fileUrl(m, download); if (w) w.location.href = url; else window.location.href = url; } catch (e) { w?.close(); setError((e as Error).message); }
-  }
   return <PortalTheme><div className="admin-page student-page">
     <header className="admin-header"><div className="admin-header-inner"><div className="admin-brand"><span className="student-logo"><PortalLogo /><small>RESEARCH ARCHIVE</small></span><span className="admin-separator">|</span><span>Search Archive</span></div>
       <nav aria-label="Student navigation"><ThemeToggle />{profile.data && <span className="admin-identity">{profile.data.name}</span>}<Button variant="ghost" size="nav" onClick={signOut}>Sign out</Button></nav></div></header>
@@ -73,7 +69,7 @@ function StudentDashboard() {
               <h2 className="ms-title">{m.title}</h2>
               <p className="ms-line">Authors: {m.authors} · Program: {m.program}</p>
               <details className="ms-abstract"><summary>Abstract{m.keywords && ` · Keywords: ${m.keywords}`}</summary><p>{m.abstract}</p></details>
-              <div className="ms-actions"><div><Button variant="outline" size="sm" onClick={() => open(m, false)}><Eye />View</Button><Button variant="outline" size="sm" onClick={() => open(m, true)}><Download />Download</Button></div></div>
+              <div className="ms-actions"><div><ManuscriptFileButtons manuscript={m} onError={setError} /></div></div>
             </article>)}
         </section>
       </>}

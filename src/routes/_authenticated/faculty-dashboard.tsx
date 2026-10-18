@@ -1,13 +1,14 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { queryOptions, useQuery, useSuspenseQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Check, Clock, Download, Eye, RotateCcw, SquareCheck, Trash2, X } from 'lucide-react';
+import { Check, Clock, RotateCcw, SquareCheck, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PortalLogo, PortalTheme, ThemeToggle, pageHead } from '@/components/portal';
 import { StatusBadge } from '@/components/manuscript-status';
+import { ManuscriptFileButtons } from '@/components/manuscript-file';
 import { supabase } from '@/integrations/supabase/client';
 import { getFacultyAccount } from '@/lib/faculty.functions';
-import { deleteManuscript, fileUrl, formatDate, listManuscripts, refLabel, reviewManuscript, type Manuscript } from '@/lib/manuscripts';
+import { deleteManuscript, formatDate, listManuscripts, refLabel, reviewManuscript } from '@/lib/manuscripts';
 
 const accountOptions = queryOptions({ queryKey: ['faculty-account'], queryFn: () => getFacultyAccount(), retry: false, staleTime: 0 });
 
@@ -43,10 +44,6 @@ function FacultyDashboard() {
     setError('');
     try { await fn(); await queryClient.invalidateQueries({ queryKey: ['manuscripts'] }); } catch (e) { setError((e as Error).message); }
   }
-  async function open(m: Manuscript, download: boolean) {
-    const w = window.open('', '_blank');
-    try { const url = await fileUrl(m, download); if (w) w.location.href = url; else window.location.href = url; } catch (e) { w?.close(); setError((e as Error).message); }
-  }
   const current = tabs.find(t => t.key === tab)!;
   const items = all.filter(m => m.status === tab);
   return <PortalTheme><div className="admin-page student-page">
@@ -64,7 +61,7 @@ function FacultyDashboard() {
         <details className="ms-abstract"><summary>Abstract{m.keywords && ` · Keywords: ${m.keywords}`}</summary><p>{m.abstract}</p></details>
         {m.reviewer_notes && <div className="ms-notes"><strong>Reviewer Notes:</strong> {m.reviewer_notes}</div>}
         <div className="ms-actions">
-          <div><Button variant="outline" size="sm" onClick={() => open(m, false)}><Eye />View</Button><Button variant="outline" size="sm" onClick={() => open(m, true)}><Download />Download</Button></div>
+          <div><ManuscriptFileButtons manuscript={m} onError={setError} /></div>
           <div>
             {m.status === 'pending' && <><Button variant="auth" size="sm" onClick={() => act(() => reviewManuscript(m.id, 'approved'))}><Check />Approve</Button><Button variant="outline" size="sm" className="ms-reject" onClick={() => { const n = window.prompt('Reviewer notes (reason for rejection / revisions required):'); if (n !== null) act(() => reviewManuscript(m.id, 'rejected', n.trim())); }}><X />Reject</Button></>}
             {m.status === 'approved' && <Button variant="outline" size="sm" onClick={() => act(() => reviewManuscript(m.id, 'pending'))}><RotateCcw />Re-evaluate</Button>}

@@ -5,6 +5,7 @@ import { FileText, LogOut, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PortalLogo, PortalTheme, ThemeToggle, pageHead } from '@/components/portal';
 import { StatusBadge } from '@/components/manuscript-status';
+import { ManuscriptFileButtons } from '@/components/manuscript-file';
 import { supabase } from '@/integrations/supabase/client';
 import { getGraduatedAccount } from '@/lib/graduated.functions';
 import { formatDate, listManuscripts, refLabel, submitManuscript } from '@/lib/manuscripts';
@@ -33,6 +34,7 @@ function GraduatedDashboard() {
   const queryClient = useQueryClient();
   const [kind, setKind] = useState('Capstone');
   const [notice, setNotice] = useState('');
+  const [fileError, setFileError] = useState('');
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
@@ -76,11 +78,13 @@ function GraduatedDashboard() {
         </form>
       </section>
       <section className="manuscript-submissions" aria-labelledby="submissions-title"><h2 id="submissions-title" className="student-title"><FileText />Your submissions</h2>
+        {fileError && <p className="form-notice" role="alert">{fileError}</p>}
         {subs.length === 0 ? <p>Nothing submitted yet.</p> : subs.map(m => <article key={m.id} className="sub-card">
           <div className="ms-meta"><code>{refLabel(m)}</code><span className="ms-kind">{m.kind}</span><StatusBadge status={m.status} /></div>
           <h3>{m.title}</h3>
           <p className="ms-line">Completed: {formatDate(m.completed_on)} · {m.authors}</p>
           {m.reviewer_notes && <p className="ms-line">Reviewer notes: {m.reviewer_notes}</p>}
+          <div className="ms-actions"><div><ManuscriptFileButtons manuscript={m} onError={setFileError} /></div></div>
         </article>)}
       </section>
     </main>
