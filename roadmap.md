@@ -1,0 +1,12 @@
+# Roadmap
+- [x] Recreate landing, sign-in and sign-up from supplied references.
+- [x] Add shared light/dark appearance and verify navigation and form controls.
+- [x] Remove header Sign in link and DASHBOARDS nav from the landing header.
+- [x] Remove the floating Role & Gate Switcher button and its role menu from the account pages.
+- [x] Add secure administrator login with username admin and privately chosen password.
+- [x] Add profile storage and protected administrator directory matching the reference in both themes, without sample users.
+- [x] Verify administrator login, directory access, filters, and sign-out.
+- [x] Add Graduated Student dashboard in both themes without the archive shortcut or sample administrator badge.
+- [x] Route approved Graduated Student sign-ins to their dashboard and verify account approval access.
+- [x] Add Faculty review queue dashboard (light/dark, no sample manuscripts) and route approved Faculty sign-ins to it.
+- [x] Student dashboard: search shows faculty-approved manuscripts only (Archived Manuscripts button untouched)
